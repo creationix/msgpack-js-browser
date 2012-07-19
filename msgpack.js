@@ -1,4 +1,10 @@
-(function (exports) {
+( // Module boilerplate to support browser globals and AMD.
+  (typeof define === "function" && function (m) { define("msgpack", m); }) ||
+  (function (m) { window.msgpack = m(); })
+)(function () {
+"use strict";
+
+var exports = {};
 
 exports.inspect = inspect;
 function inspect(buffer) {
@@ -31,7 +37,7 @@ function inspect(buffer) {
 exports.utf8Write = utf8Write;
 function utf8Write(view, offset, string) {
   var byteLength = view.byteLength;
-  for(i = 0, l = string.length; i < l; i++) {
+  for(var i = 0, l = string.length; i < l; i++) {
     var codePoint = string.charCodeAt(i);
 
     // One byte of UTF-8
@@ -588,5 +594,6 @@ function sizeof(value) {
   throw new Error("Unknown type " + type);
 }
 
+return exports;
 
-}(msgpack = {}));
+});
