@@ -1,0 +1,5 @@
+{
+  "name": "msgpack-js",
+  "version": "0.1.1",
+  "description": "A browser port of msgpack-js from node"
+}
