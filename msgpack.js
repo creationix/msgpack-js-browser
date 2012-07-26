@@ -1,5 +1,5 @@
 ( // Module boilerplate to support browser globals and AMD.
-  (typeof define === "function" && function (m) { define("msgpack", m); }) ||
+  (typeof define === "function" && function (m) { define("msgpack-js", m); }) ||
   (function (m) { window.msgpack = m(); })
 )(function () {
 "use strict";

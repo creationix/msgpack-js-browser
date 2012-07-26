@@ -1,5 +1,19 @@
 {
   "name": "msgpack-js",
-  "version": "0.1.1",
-  "description": "A browser port of msgpack-js from node"
+  "version": "0.1.2",
+  "description": "A msgpack encoder and decoder using ArrayBuffer and DataView",
+  "main": "msgpack.js",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/mit-license.php"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "git",
+      "url": "http://github.com/creationix/msgpack-js-browser.git"
+    }
+  ],
+  "github": "http://github.com/creationix/msgpack-js-browser"
 }
