@@ -1,6 +1,5 @@
 #!/usr/bin/env phantomjs
 
-console.log('Loading a web page');
 var page = require('webpage').create();
 
 page.onConsoleMessage = function (msg) {
@@ -24,4 +23,5 @@ page.onLoadFinished = function (status) {
   phantom.exit();
 };
 
+console.log('Loading test page');
 page.open("./index.html");
