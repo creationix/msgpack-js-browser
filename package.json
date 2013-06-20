@@ -9,11 +9,8 @@
       "url": "http://www.opensource.org/licenses/mit-license.php"
     }
   ],
-  "repositories": [
-    {
-      "type": "git",
-      "url": "http://github.com/creationix/msgpack-js-browser.git"
-    }
-  ],
-  "github": "http://github.com/creationix/msgpack-js-browser"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/creationix/msgpack-js-browser.git"
+  }
 }
