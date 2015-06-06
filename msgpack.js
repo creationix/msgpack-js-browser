@@ -143,13 +143,22 @@ function utf8ByteCount(string) {
 }
 
 exports.encode = function (value) {
-  var buffer = new ArrayBuffer(sizeof(value));
+  // NOTE: 'undefined' is an extension type that takes 3 bytes to encode
+  if (typeof value === "undefined") {
+    var buffer = new ArrayBuffer(3);
+  }
+  else {
+    var buffer = new ArrayBuffer(sizeof(value));
+  }
   var view = new DataView(buffer);
   encode(value, view, 0);
   return buffer;
 }
 
 exports.decode = decode;
+
+// https://github.com/msgpack/msgpack/blob/master/spec.md
+// we reserve extension type 0x00 to encode javascript 'undefined'
 
 function Decoder(view, offset) {
   this.offset = offset || 0;
@@ -212,6 +221,11 @@ Decoder.prototype.parse = function () {
     value = this.view.getInt8(this.offset);
     this.offset++;
     return value;
+  }
+  // Undefined as FixExt1
+  if (type === 0xd4 && this.view.getUint8(this.offset + 1) === 0x00) {
+    this.offset += 3;
+    return undefined;
   }
   switch (type) {
   // str 8
@@ -447,9 +461,17 @@ function encode(value, view, offset) {
     }
     throw new Error("Number too small -0x" + (-value).toString(16).substr(1));
   }
+
+  // undefined
+  if (type === "undefined") {
+    view.setUint8(offset, 0xd4);  // fixext 1
+    view.setUint8(offset + 1, 0); // type (undefined)
+    view.setUint8(offset + 2, 0); // data (ignored)
+    return 3;
+  }
   
   // null, undefined
-  if (value === null || type === "undefined") {
+  if (value === null) {
     view.setUint8(offset, 0xc0);
     return 1;
   }
