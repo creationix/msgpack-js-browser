@@ -369,7 +369,7 @@ function encode(value, view, offset) {
       view.setUint8(offset, 0xc4);
       view.setUint8(offset + 1, length);
       (new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 2);
-      return 3 + length;
+      return 2 + length;
     }
     // bin 16
     if (length < 0x10000) {
@@ -382,7 +382,6 @@ function encode(value, view, offset) {
     if (length < 0x100000000) {
       view.setUint8(offset, 0xc6);
       view.setUint32(offset + 1, length);
-      utf8Write(view, offset + 5, value);
       (new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 5);
       return 5 + length;
     }
