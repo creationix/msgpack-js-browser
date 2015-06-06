@@ -470,7 +470,7 @@ function encode(value, view, offset) {
     return 3;
   }
   
-  // null, undefined
+  // null
   if (value === null) {
     view.setUint8(offset, 0xc0);
     return 1;
