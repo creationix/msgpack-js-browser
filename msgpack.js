@@ -143,13 +143,7 @@ function utf8ByteCount(string) {
 }
 
 exports.encode = function (value) {
-  // NOTE: 'undefined' is an extension type that takes 3 bytes to encode
-  if (typeof value === "undefined") {
-    var buffer = new ArrayBuffer(3);
-  }
-  else {
-    var buffer = new ArrayBuffer(sizeof(value));
-  }
+  var buffer = new ArrayBuffer(encodedSize(value));
   var view = new DataView(buffer);
   encode(value, view, 0);
   return buffer;
@@ -337,7 +331,7 @@ function decode(buffer) {
   var view = new DataView(buffer);
   var decoder = new Decoder(view);
   var value = decoder.parse();
-  if (decoder.offset !== buffer.byteLength) throw new Error((buffer.byteLength - decoder.offset) + " trailing bytes");
+  // if (decoder.offset !== buffer.byteLength) throw new Error((buffer.byteLength - decoder.offset) + " trailing bytes");
   return value;
 }
 
@@ -529,7 +523,7 @@ function encode(value, view, offset) {
   throw new Error("Unknown type " + type);
 }
 
-function sizeof(value) {
+function encodedSize(value) {
   var type = typeof value;
 
   // Raw Bytes
@@ -548,6 +542,9 @@ function sizeof(value) {
   
   if (value instanceof ArrayBuffer) {
     var length = value.byteLength;
+    if (length < 0x100) {
+      return 2 + length;
+    }
     if (length < 0x10000) {
       return 3 + length;
     }
@@ -587,9 +584,12 @@ function sizeof(value) {
     if (value >= -0x8000000000000000) return 9;
     throw new Error("Number too small -0x" + value.toString(16).substr(1));
   }
+
+  // undefined
+  if (type === "undefined") return 3;
   
-  // Boolean, null, undefined
-  if (type === "boolean" || type === "undefined" || value === null) return 1;
+  // Boolean, null
+  if (type === "boolean" || value === null) return 1;
   
   // Container Types
   if (type === "object") {
@@ -597,7 +597,7 @@ function sizeof(value) {
     if (Array.isArray(value)) {
       length = value.length;
       for (var i = 0; i < length; i++) {
-        size += sizeof(value[i]);
+        size += encodedSize(value[i]);
       }
     }
     else {
@@ -605,7 +605,7 @@ function sizeof(value) {
       length = keys.length;
       for (var i = 0; i < length; i++) {
         var key = keys[i];
-        size += sizeof(key) + sizeof(value[key]);
+        size += encodedSize(key) + encodedSize(value[key]);
       }
     }
     if (length < 0x10) {
