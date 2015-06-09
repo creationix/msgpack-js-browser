@@ -143,7 +143,7 @@ function utf8ByteCount(string) {
 }
 
 exports.encode = function (value) {
-  var buffer = new ArrayBuffer(sizeof(value));
+  var buffer = new ArrayBuffer(encodedSize(value));
   var view = new DataView(buffer);
   encode(value, view, 0);
   return buffer;
@@ -151,14 +151,8 @@ exports.encode = function (value) {
 
 exports.decode = decode;
 
-// http://wiki.msgpack.org/display/MSGPACK/Format+specification
-// I've extended the protocol to have two new types that were previously reserved.
-//   buffer 16  11011000  0xd8
-//   buffer 32  11011001  0xd9
-// These work just like raw16 and raw32 except they are node buffers instead of strings.
-//
-// Also I've added a type for `undefined`
-//   undefined  11000100  0xc4
+// https://github.com/msgpack/msgpack/blob/master/spec.md
+// we reserve extension type 0x00 to encode javascript 'undefined'
 
 function Decoder(view, offset) {
   this.offset = offset || 0;
@@ -172,13 +166,13 @@ Decoder.prototype.map = function (length) {
   }
   return value;
 };
-Decoder.prototype.buf = function (length) {
+Decoder.prototype.bin = function (length) {
   var value = new ArrayBuffer(length);
   (new Uint8Array(value)).set(new Uint8Array(this.view.buffer, this.offset, length), 0);
   this.offset += length;
   return value;
 };
-Decoder.prototype.raw = function (length) {
+Decoder.prototype.str = function (length) {
   var value = utf8Read(this.view, this.offset, length);
   this.offset += length;
   return value;
@@ -193,11 +187,11 @@ Decoder.prototype.array = function (length) {
 Decoder.prototype.parse = function () {
   var type = this.view.getUint8(this.offset);
   var value, length;
-  // FixRaw
+  // FixStr
   if ((type & 0xe0) === 0xa0) {
     length = type & 0x1f;
     this.offset++;
-    return this.raw(length);
+    return this.str(length);
   }
   // FixMap
   if ((type & 0xf0) === 0x80) {
@@ -222,17 +216,42 @@ Decoder.prototype.parse = function () {
     this.offset++;
     return value;
   }
+  // Undefined as FixExt1
+  if (type === 0xd4 && this.view.getUint8(this.offset + 1) === 0x00) {
+    this.offset += 3;
+    return undefined;
+  }
   switch (type) {
-  // raw 16
+  // str 8
+  case 0xd9:
+    length = this.view.getUint8(this.offset + 1);
+    this.offset += 2;
+    return this.str(length);
+  // str 16
   case 0xda:
     length = this.view.getUint16(this.offset + 1);
     this.offset += 3;
-    return this.raw(length);
-  // raw 32
+    return this.str(length);
+  // str 32
   case 0xdb:
     length = this.view.getUint32(this.offset + 1);
     this.offset += 5;
-    return this.raw(length);
+    return this.str(length);
+  // bin 8
+  case 0xc4:
+    length = this.view.getUint8(this.offset + 1);
+    this.offset += 2;
+    return this.bin(length);
+  // bin 16
+  case 0xc5:
+    length = this.view.getUint16(this.offset + 1);
+    this.offset += 3;
+    return this.bin(length);
+  // bin 32
+  case 0xc6:
+    length = this.view.getUint32(this.offset + 1);
+    this.offset += 5;
+    return this.bin(length);
   // nil
   case 0xc0:
     this.offset++;
@@ -245,10 +264,6 @@ Decoder.prototype.parse = function () {
   case 0xc3:
     this.offset++;
     return true;
-  // undefined
-  case 0xc4:
-    this.offset++;
-    return undefined;
   // uint8
   case 0xcc:
     value = this.view.getUint8(this.offset + 1);
@@ -299,16 +314,6 @@ Decoder.prototype.parse = function () {
     length = this.view.getUint32(this.offset + 1);
     this.offset += 5;
     return this.array(length);
-  // buffer 16
-  case 0xd8:
-    length = this.view.getUint16(this.offset + 1);
-    this.offset += 3;
-    return this.buf(length);
-  // buffer 32
-  case 0xd9:
-    length = this.view.getUint32(this.offset + 1);
-    this.offset += 5;
-    return this.buf(length);
   // float
   case 0xca:
     value = this.view.getFloat32(this.offset + 1);
@@ -336,20 +341,27 @@ function encode(value, view, offset) {
   // Strings Bytes
   if (type === "string") {
     var length = utf8ByteCount(value);
-    // fix raw
+    // fix str
     if (length < 0x20) {
       view.setUint8(offset, length | 0xa0);
       utf8Write(view, offset + 1, value);
       return 1 + length;
     }
-    // raw 16
+    // str 8
+    if (length < 0x100) {
+      view.setUint8(offset, 0xda);
+      view.setUint8(offset + 1, length);
+      utf8Write(view, offset + 2, value);
+      return 2 + length;
+    }
+    // str 16
     if (length < 0x10000) {
       view.setUint8(offset, 0xda);
       view.setUint16(offset + 1, length);
       utf8Write(view, offset + 3, value);
       return 3 + length;
     }
-    // raw 32
+    // str 32
     if (length < 0x100000000) {
       view.setUint8(offset, 0xdb);
       view.setUint32(offset + 1, length);
@@ -360,16 +372,23 @@ function encode(value, view, offset) {
 
   if (value instanceof ArrayBuffer) {
     var length = value.byteLength;
-    // buffer 16
+    // bin 8
+    if (length < 0x100) {
+      view.setUint8(offset, 0xc4);
+      view.setUint8(offset + 1, length);
+      (new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 2);
+      return 2 + length;
+    }
+    // bin 16
     if (length < 0x10000) {
-      view.setUint8(offset, 0xd8);
+      view.setUint8(offset, 0xc5);
       view.setUint16(offset + 1, length);
       (new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 3);
       return 3 + length;
     }
-    // buffer 32
+    // bin 32
     if (length < 0x100000000) {
-      view.setUint8(offset, 0xd9);
+      view.setUint8(offset, 0xc6);
       view.setUint32(offset + 1, length);
       (new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 5);
       return 5 + length;
@@ -436,11 +455,13 @@ function encode(value, view, offset) {
     }
     throw new Error("Number too small -0x" + (-value).toString(16).substr(1));
   }
-  
+
   // undefined
   if (type === "undefined") {
-    view.setUint8(offset, 0xc4);
-    return 1;
+    view.setUint8(offset, 0xd4);  // fixext 1
+    view.setUint8(offset + 1, 0); // type (undefined)
+    view.setUint8(offset + 2, 0); // data (ignored)
+    return 3;
   }
   
   // null
@@ -502,7 +523,7 @@ function encode(value, view, offset) {
   throw new Error("Unknown type " + type);
 }
 
-function sizeof(value) {
+function encodedSize(value) {
   var type = typeof value;
 
   // Raw Bytes
@@ -521,6 +542,9 @@ function sizeof(value) {
   
   if (value instanceof ArrayBuffer) {
     var length = value.byteLength;
+    if (length < 0x100) {
+      return 2 + length;
+    }
     if (length < 0x10000) {
       return 3 + length;
     }
@@ -560,9 +584,12 @@ function sizeof(value) {
     if (value >= -0x8000000000000000) return 9;
     throw new Error("Number too small -0x" + value.toString(16).substr(1));
   }
+
+  // undefined
+  if (type === "undefined") return 3;
   
-  // Boolean, null, undefined
-  if (type === "boolean" || type === "undefined" || value === null) return 1;
+  // Boolean, null
+  if (type === "boolean" || value === null) return 1;
   
   // Container Types
   if (type === "object") {
@@ -570,7 +597,7 @@ function sizeof(value) {
     if (Array.isArray(value)) {
       length = value.length;
       for (var i = 0; i < length; i++) {
-        size += sizeof(value[i]);
+        size += encodedSize(value[i]);
       }
     }
     else {
@@ -578,7 +605,7 @@ function sizeof(value) {
       length = keys.length;
       for (var i = 0; i < length; i++) {
         var key = keys[i];
-        size += sizeof(key) + sizeof(value[key]);
+        size += encodedSize(key) + encodedSize(value[key]);
       }
     }
     if (length < 0x10) {
