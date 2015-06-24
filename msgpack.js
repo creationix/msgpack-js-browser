@@ -279,6 +279,13 @@ Decoder.prototype.parse = function () {
     value = this.view.getUint32(this.offset + 1);
     this.offset += 5;
     return value;
+  // uint 64
+  case 0xcf:
+    var high = this.view.getUint32(this.offset + 1);
+    var low = this.view.getUint32(this.offset + 5);
+    value = high*0x100000000 + low;
+    this.offset += 9;
+    return value;
   // int 8
   case 0xd0:
     value = this.view.getInt8(this.offset + 1);
@@ -293,6 +300,13 @@ Decoder.prototype.parse = function () {
   case 0xd2:
     value = this.view.getInt32(this.offset + 1);
     this.offset += 5;
+    return value;
+  //int 64
+  case 0xd3:
+    var high = this.view.getInt32(this.offset + 1);
+    var low = this.view.getUint32(this.offset + 5);
+    value = high*0x100000000 + low;
+    this.offset += 9;
     return value;
   // map 16
   case 0xde:
