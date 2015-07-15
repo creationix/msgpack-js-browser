@@ -71,8 +71,8 @@ var tests = [
     'hello', 'world', Buffer("Hello"), Buffer("World"),
     [1,2,3], [], {name: "Tim", age: 29}, {},
     {a: 1, b: 2, c: [1, 2, 3]}, [[],[]],
-    "12345678",
-    "1af60c36-497c-46cb-8408-78cab2a54a5b",
+    "fixstr-890123456789012345678901",
+    "str8-678901234567890123456789012",
 ];
 
     var body = document.querySelector("tbody");
@@ -105,7 +105,7 @@ var tests = [
             statusRun.style.display = "none";
         }
         catch(err) {
-            tdEnc.textContent = "Exception: " + err.message;
+            tdOut.textContent = "Exception: " + err.message;
             statusRun.style.display = "none";
             statusFail.style.display = "inline-block";
             throw err;
