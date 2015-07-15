@@ -91,16 +91,19 @@ var tests = [
         tr.setAttribute("class", "failed");
         body.appendChild(tr);
         try {
-            var buffer = msgpack.encode(value);
-            var decoded = msgpack.decode(buffer);
             var valueString = msgpack.inspect(value);
+            tdIn.textContent = valueString;
+
+            var buffer = msgpack.encode(value);
+            tdEnc.textContent = msgpack.inspect(buffer);
+
+            var decoded = msgpack.decode(buffer);
             var decodedString = msgpack.inspect(decoded);
+            tdOut.textContent = decodedString;
+
             var passed = valueString === decodedString;
             console[(passed ? "log" : "error")](value, msgpack.inspect(buffer), decoded);
 
-            tdIn.textContent = valueString;
-            tdEnc.textContent = msgpack.inspect(buffer);
-            tdOut.textContent = decodedString;
             tr.setAttribute("class", passed ? "passed" : "failed");
             statusRun.style.display = "none";
         }
