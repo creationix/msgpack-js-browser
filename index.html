@@ -4,19 +4,35 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Msgpack</title>
     <style>
-      .passed {
-        background-color: #8f8;
-        color: #000;
-      }
-      .failed {
-        background-color: #f22;
-        color: #000;
-        font-weight: bold;
-      }
+        #heading {
+            display: inline-block;
+        }
+        #test-running {
+            display: inline-block;
+        }
+        #test-success {
+            display: none;
+        }
+        #test-fail {
+            color: red;
+            display: none;
+        }
+        .passed {
+            background-color: #8f8;
+            color: #000;
+        }
+        .failed {
+            background-color: #f22;
+            color: #000;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>Msgpack</h1>
+    <h1 id="heading">Msgpack</h1>
+    <h2 id="test-running"> - running...</h2>
+    <h2 id="test-success"> - succeeded</h2>
+    <h2 id="test-fail"> - FAILED</h2>
     <table>
         <thead>
             <tr>
@@ -31,6 +47,9 @@
     <script src="msgpack.js"></script>
     <script>
 
+/* jshint browser: true */
+/* global console, msgpack */
+
 function Buffer(string) {
     var buffer = new ArrayBuffer(msgpack.utf8ByteCount(string));
     var view = new DataView(buffer);
@@ -39,43 +58,59 @@ function Buffer(string) {
 }
 
 var tests = [
-  "$", "¢", "€",
-  "임창진",
-  true, false, null, undefined,
-  0, 1, -1, 2, -2, 4, -4, 6, -6,
-  0x10, -0x10, 0x20, -0x20, 0x40, -0x40,
-  0x80, -0x80, 0x100, -0x100, 0x200, -0x200,
-  0x1000, -0x1000, 0x10000, -0x10000,
-  0x20000, -0x20000, 0x40000,-0x40000,
-  10, 100, 1000, 10000, 100000, 1000000,
-  -10, -100, -1000, -10000, -100000, -1000000,
-  'hello', 'world', Buffer("Hello"), Buffer("World"),
-  [1,2,3], [], {name: "Tim", age: 29}, {},
-  {a: 1, b: 2, c: [1, 2, 3]}, [[],[]]
+    "$", "¢", "€",
+    "임창진",
+    true, false, null, undefined,
+    0, 1, -1, 2, -2, 4, -4, 6, -6,
+    0x10, -0x10, 0x20, -0x20, 0x40, -0x40,
+    0x80, -0x80, 0x100, -0x100, 0x200, -0x200,
+    0x1000, -0x1000, 0x10000, -0x10000,
+    0x20000, -0x20000, 0x40000,-0x40000,
+    10, 100, 1000, 10000, 100000, 1000000,
+    -10, -100, -1000, -10000, -100000, -1000000,
+    'hello', 'world', Buffer("Hello"), Buffer("World"),
+    [1,2,3], [], {name: "Tim", age: 29}, {},
+    {a: 1, b: 2, c: [1, 2, 3]}, [[],[]],
+    "12345678",
+    "1af60c36-497c-46cb-8408-78cab2a54a5b",
 ];
 
     var body = document.querySelector("tbody");
+    var statusRun = document.getElementById("test-running");
+    var statusSuccess = document.getElementById("test-success");
+    var statusFail = document.getElementById("test-fail");
     tests.forEach(function (value) {
-        var buffer = msgpack.encode(value);
-        var decoded = msgpack.decode(buffer);
-        var valueString = msgpack.inspect(value);
-        var decodedString = msgpack.inspect(decoded);
-        var passed = valueString === decodedString;
-        console[(passed ? "log" : "error")](value, msgpack.inspect(buffer), decoded);
-
         var tr = document.createElement("tr");
-        var td = document.createElement("td");
-        td.textContent = valueString;
-        tr.appendChild(td);
-        td = document.createElement("td");
-        td.textContent = msgpack.inspect(buffer);
-        tr.appendChild(td);
-        td = document.createElement("td");
-        td.textContent = decodedString
-        tr.appendChild(td);
-        tr.setAttribute("class", passed ? "passed" : "failed");
-        tr.appendChild(td);
+        var tdIn = document.createElement("td");
+        var tdEnc = document.createElement("td");
+        var tdOut = document.createElement("td");
+        tdIn.textContent = String(value);
+        tr.appendChild(tdIn);
+        tr.appendChild(tdEnc);
+        tr.appendChild(tdOut);
+        tr.setAttribute("class", "failed");
         body.appendChild(tr);
+        try {
+            var buffer = msgpack.encode(value);
+            var decoded = msgpack.decode(buffer);
+            var valueString = msgpack.inspect(value);
+            var decodedString = msgpack.inspect(decoded);
+            var passed = valueString === decodedString;
+            console[(passed ? "log" : "error")](value, msgpack.inspect(buffer), decoded);
+
+            tdIn.textContent = valueString;
+            tdEnc.textContent = msgpack.inspect(buffer);
+            tdOut.textContent = decodedString;
+            tr.setAttribute("class", passed ? "passed" : "failed");
+            statusRun.style.display = "none";
+        }
+        catch(err) {
+            tdEnc.textContent = "Exception: " + err.message;
+            statusRun.style.display = "none";
+            statusFail.style.display = "inline-block";
+            throw err;
+        }
+        statusSuccess.style.visibility = "inline-block";
     });
     </script>
 </body>
