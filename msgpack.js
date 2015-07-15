@@ -1,3 +1,5 @@
+/* jshint browser: true */
+/* global define, module */
 ( // Module boilerplate to support browser globals and browserify and AMD.
   typeof define === "function" ? function (m) { define("msgpack-js", m); } :
   typeof exports === "object" ? function (m) { module.exports = m(); } :
@@ -54,7 +56,7 @@ function utf8Write(view, offset, string) {
       continue;
     }
 
-    // Three bytes of UTF-8.  
+    // Three bytes of UTF-8.
     if (codePoint < 0x10000) {
       view.setUint8(offset++, codePoint >>> 12 & 0x0f | 0xe0);
       view.setUint8(offset++, codePoint >>> 6  & 0x3f | 0x80);
@@ -87,7 +89,7 @@ function utf8Read(view, offset, length) {
     // Two byte character
     if ((byte & 0xe0) === 0xc0) {
       string += String.fromCharCode(
-        ((byte & 0x0f) << 6) | 
+        ((byte & 0x0f) << 6) |
         (view.getUint8(++i) & 0x3f)
       );
       continue;
@@ -147,7 +149,7 @@ exports.encode = function (value) {
   var view = new DataView(buffer);
   encode(value, view, 0);
   return buffer;
-}
+};
 
 exports.decode = decode;
 
@@ -301,7 +303,7 @@ Decoder.prototype.parse = function () {
     value = this.view.getInt32(this.offset + 1);
     this.offset += 5;
     return value;
-  //int 64
+  // int 64
   case 0xd3:
     var high = this.view.getInt32(this.offset + 1);
     var low = this.view.getUint32(this.offset + 5);
@@ -363,7 +365,7 @@ function encode(value, view, offset) {
     }
     // str 8
     if (length < 0x100) {
-      view.setUint8(offset, 0xda);
+      view.setUint8(offset, 0xd9);
       view.setUint8(offset + 1, length);
       utf8Write(view, offset + 2, value);
       return 2 + length;
@@ -408,7 +410,7 @@ function encode(value, view, offset) {
       return 5 + length;
     }
   }
-  
+
   if (type === "number") {
     // Floating Point
     if ((value << 0) !== value) {
@@ -477,7 +479,7 @@ function encode(value, view, offset) {
     view.setUint8(offset + 2, 0); // data (ignored)
     return 3;
   }
-  
+
   // null
   if (value === null) {
     view.setUint8(offset, 0xc0);
@@ -489,7 +491,7 @@ function encode(value, view, offset) {
     view.setUint8(offset, value ? 0xc3 : 0xc2);
     return 1;
   }
-  
+
   // Container Types
   if (type === "object") {
     var length, size = 0;
@@ -531,7 +533,7 @@ function encode(value, view, offset) {
         size += encode(value[key], view, offset + size);
       }
     }
-    
+
     return size;
   }
   throw new Error("Unknown type " + type);
@@ -546,6 +548,9 @@ function encodedSize(value) {
     if (length < 0x20) {
       return 1 + length;
     }
+    if (length < 0x100) {
+      return 2 + length;
+    }
     if (length < 0x10000) {
       return 3 + length;
     }
@@ -553,7 +558,7 @@ function encodedSize(value) {
       return 5 + length;
     }
   }
-  
+
   if (value instanceof ArrayBuffer) {
     var length = value.byteLength;
     if (length < 0x100) {
@@ -566,7 +571,7 @@ function encodedSize(value) {
       return 5 + length;
     }
   }
-  
+
   if (type === "number") {
     // Floating Point
     // double
@@ -601,10 +606,10 @@ function encodedSize(value) {
 
   // undefined
   if (type === "undefined") return 3;
-  
+
   // Boolean, null
   if (type === "boolean" || value === null) return 1;
-  
+
   // Container Types
   if (type === "object") {
     var length, size = 0;
