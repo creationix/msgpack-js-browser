@@ -365,7 +365,7 @@ function encode(value, view, offset) {
     }
     // str 8
     if (length < 0x100) {
-      view.setUint8(offset, 0xda);
+      view.setUint8(offset, 0xd9);
       view.setUint8(offset + 1, length);
       utf8Write(view, offset + 2, value);
       return 2 + length;
@@ -547,6 +547,9 @@ function encodedSize(value) {
     var length = utf8ByteCount(value);
     if (length < 0x20) {
       return 1 + length;
+    }
+    if (length < 0x100) {
+      return 2 + length;
     }
     if (length < 0x10000) {
       return 3 + length;
