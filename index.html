@@ -105,7 +105,6 @@ var tests = [
             console[(passed ? "log" : "error")](value, msgpack.inspect(buffer), decoded);
 
             tr.setAttribute("class", passed ? "passed" : "failed");
-            statusRun.style.display = "none";
         }
         catch(err) {
             tdOut.textContent = "Exception: " + err.message;
@@ -113,8 +112,9 @@ var tests = [
             statusFail.style.display = "inline-block";
             throw err;
         }
-        statusSuccess.style.visibility = "inline-block";
     });
+    statusRun.style.display = "none";
+    statusSuccess.style.display = "inline-block";
     </script>
 </body>
 </html>
