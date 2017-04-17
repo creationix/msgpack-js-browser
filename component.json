@@ -3,5 +3,19 @@
   "version": "1.0.0",
   "description": "A msgpack encoder and decoder using ArrayBuffer and DataView",
   "main": "msgpack.js",
-  "scripts": ["msgpack.js"]
+  "scripts": [
+    "msgpack.js"
+  ],
+  "homepage": "https://github.com/ntemocentr/msgpack-js-browser",
+  "authors": [
+    "n@temocenter.ru"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
 }

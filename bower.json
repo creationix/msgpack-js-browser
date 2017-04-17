@@ -1,0 +1,14 @@
+{
+  "name": "msgpack-js-browser",
+  "version": "1.0.0",
+  "main": "msgpack.js",
+  "ignore": [
+    ".jshintrc",
+    "**/*.txt"
+  ],
+  "dependencies": {
+    
+  },
+  "devDependencies": {
+  }
+}
